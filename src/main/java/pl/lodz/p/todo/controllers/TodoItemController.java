@@ -1,7 +1,8 @@
 package pl.lodz.p.todo.controllers;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pl.lodz.p.todo.entities.TodoItem;
+import pl.lodz.p.todo.dto.TodoItemDto;
 import pl.lodz.p.todo.services.TodoItemService;
 
 import java.util.List;
@@ -17,27 +18,37 @@ public class TodoItemController {
     }
 
     @GetMapping
-    public List<TodoItem> getItems() {
+    public List<TodoItemDto> getItems() {
         return todoItemService.getAllItems();
     }
 
     @GetMapping("/{id}")
-    public TodoItem getItemById(@PathVariable Long id) {
-        return todoItemService.getItemById(id);
+    public ResponseEntity<?> getItemById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok().body(todoItemService.getItemById(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
-    @DeleteMapping("/{id}")
-    public void deleteItemById(@PathVariable Long id) {
-        todoItemService.deleteItemById(id);
+    @DeleteMapping("/{businessKey}")
+    public void deleteItemByKey(@PathVariable String businessKey) {
+        todoItemService.deleteItemById(businessKey);
     }
 
     @PostMapping
-    public TodoItem createItem(@RequestBody TodoItem todoItem) {
-        return todoItemService.addItem(todoItem);
+    public ResponseEntity<?> createItem(@RequestBody TodoItemDto todoItemEntity) {
+        todoItemService.addItem(todoItemEntity);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping
-    public TodoItem updateItem(@RequestBody TodoItem todoItem) {
-        return todoItemService.updateItem(todoItem);
+    public ResponseEntity<?> updateItem(@RequestBody TodoItemDto todoItemEntity) {
+        try {
+            todoItemService.updateItem(todoItemEntity);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

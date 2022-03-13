@@ -1,40 +1,70 @@
 package pl.lodz.p.todo.services;
 
 import org.springframework.stereotype.Service;
-import pl.lodz.p.todo.entities.TodoItem;
-import pl.lodz.p.todo.repositories.TodoItemRepository;
+import org.springframework.transaction.annotation.Transactional;
+import pl.lodz.p.todo.domain.TodoItemDocument;
+import pl.lodz.p.todo.domain.TodoItemEntity;
+import pl.lodz.p.todo.dto.TodoItemDto;
+import pl.lodz.p.todo.dto.mappers.TodoItemDocumentMapper;
+import pl.lodz.p.todo.dto.mappers.TodoItemEntityMapper;
+import pl.lodz.p.todo.repositories.TodoItemDocumentRepository;
+import pl.lodz.p.todo.repositories.TodoItemEntityRepository;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class TodoItemService {
 
-    private final TodoItemRepository todoItemRepository;
+    private final TodoItemEntityRepository todoItemEntityRepository;
+    private final TodoItemDocumentRepository todoItemDocumentRepository;
 
-    public TodoItemService(TodoItemRepository todoItemRepository) {
-        this.todoItemRepository = todoItemRepository;
+    public TodoItemService(TodoItemEntityRepository todoItemEntityRepository, TodoItemDocumentRepository todoItemDocumentRepository) {
+        this.todoItemEntityRepository = todoItemEntityRepository;
+        this.todoItemDocumentRepository = todoItemDocumentRepository;
     }
 
-    public TodoItem addItem(TodoItem todoItem) {
-        return todoItemRepository.saveAndFlush(todoItem);
+    public void addItem(TodoItemDto todoItemDto) {
+        String businessKey = UUID.randomUUID().toString();
+
+        TodoItemEntity todoItemEntity = TodoItemEntityMapper.mapFromDto(todoItemDto);
+        todoItemEntity.setBusinessKey(businessKey);
+        todoItemEntityRepository.saveAndFlush(todoItemEntity);
+
+        TodoItemDocument todoItemDocument = TodoItemDocumentMapper.mapFromDto(todoItemDto);
+        todoItemDocument.setBusinessKey(businessKey);
+        todoItemDocumentRepository.save(todoItemDocument);
     }
 
-    public TodoItem getItemById(Long id) {
-        return todoItemRepository.findById(id).get();
+    public TodoItemDto getItemById(Long id) {
+        return todoItemEntityRepository.findById(id)
+                .map(TodoItemEntityMapper::mapToDto)
+                .orElseThrow(IllegalArgumentException::new);
     }
 
-    public List<TodoItem> getAllItems() {
-        return todoItemRepository.findAll();
+    public List<TodoItemDto> getAllItems() {
+        return todoItemEntityRepository.findAll().stream().map(TodoItemEntityMapper::mapToDto).collect(Collectors.toList());
     }
 
-    public void deleteItemById(Long id) {
-        todoItemRepository.deleteById(id);
+    public void deleteItemById(String businessKey) {
+        todoItemEntityRepository.deleteByBusinessKey(businessKey);
+        todoItemDocumentRepository.deleteByBusinessKey(businessKey);
     }
 
-    public TodoItem updateItem(TodoItem todoItem) {
-        TodoItem item = todoItemRepository.findById(todoItem.getId()).get();
-        item.setTitle(todoItem.getTitle());
-        item.setDescription(todoItem.getDescription());
-        return todoItemRepository.saveAndFlush(item);
+    public void updateItem(TodoItemDto todoItemDto) {
+        TodoItemEntity todoItemEntity = todoItemEntityRepository.findByBusinessKey(todoItemDto.getBusinessKey())
+                .orElseThrow(IllegalArgumentException::new);
+        TodoItemDocument todoItemDocument = todoItemDocumentRepository.findByBusinessKey(todoItemDto.getBusinessKey())
+                .orElseThrow(IllegalArgumentException::new);
+
+        todoItemEntity.setTitle(todoItemDto.getTitle());
+        todoItemEntity.setDescription(todoItemDto.getDescription());
+        todoItemEntityRepository.saveAndFlush(todoItemEntity);
+
+        todoItemDocument.setTitle(todoItemDto.getTitle());
+        todoItemDocument.setDescription(todoItemDto.getDescription());
+        todoItemDocumentRepository.save(todoItemDocument);
     }
 }
