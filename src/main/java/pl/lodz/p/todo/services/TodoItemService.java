@@ -67,4 +67,8 @@ public class TodoItemService {
         todoItemDocument.setDescription(todoItemDto.getDescription());
         todoItemDocumentRepository.save(todoItemDocument);
     }
+
+    public List<TodoItemDto> search(String searchString) {
+        return todoItemEntityRepository.search(searchString).stream().map(TodoItemEntityMapper::mapToDto).collect(Collectors.toList());
+    }
 }

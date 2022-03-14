@@ -51,4 +51,9 @@ public class TodoItemController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @GetMapping("/search/{searchString}")
+    public List<TodoItemDto> search(@PathVariable String searchString) {
+        return todoItemService.search(searchString);
+    }
 }

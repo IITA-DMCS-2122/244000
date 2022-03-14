@@ -7,7 +7,7 @@ import pl.lodz.p.todo.domain.TodoItemEntity;
 import java.util.Optional;
 
 @Transactional
-public interface TodoItemEntityRepository extends JpaRepository<TodoItemEntity, Long> {
+public interface TodoItemEntityRepository extends JpaRepository<TodoItemEntity, Long>, TodoItemElEntityRepository {
 
     Optional<TodoItemEntity> findByBusinessKey(String businessKey);
     void deleteByBusinessKey(String businessKey);
