@@ -6,7 +6,7 @@ import pl.lodz.p.todo.domain.TodoItemDocument;
 
 import java.util.Optional;
 
-@Transactional
+@Transactional(transactionManager = "mongoTransactionManager")
 public interface TodoItemDocumentRepository extends MongoRepository<TodoItemDocument, String> {
 
     void deleteByBusinessKey(String businessKey);

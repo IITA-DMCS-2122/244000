@@ -1,4 +1,4 @@
-package pl.lodz.p.todo.repositories;
+package pl.lodz.p.todo.repositories.domain;
 
 import org.springframework.transaction.annotation.Transactional;
 import pl.lodz.p.todo.domain.TodoItemEntity;

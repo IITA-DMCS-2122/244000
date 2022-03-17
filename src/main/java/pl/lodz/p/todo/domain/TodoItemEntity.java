@@ -26,6 +26,7 @@ public class TodoItemEntity {
 
     private String businessKey;
 
+    @FullTextField
     private String title;
 
     @FullTextField
