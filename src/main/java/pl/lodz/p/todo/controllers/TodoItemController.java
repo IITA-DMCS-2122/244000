@@ -1,21 +1,21 @@
 package pl.lodz.p.todo.controllers;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.lodz.p.todo.dto.TodoItemDto;
+import pl.lodz.p.todo.services.EventService;
 import pl.lodz.p.todo.services.TodoItemService;
 
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping(value = "/items")
 public class TodoItemController {
 
     private final TodoItemService todoItemService;
-
-    public TodoItemController(TodoItemService todoItemService) {
-        this.todoItemService = todoItemService;
-    }
+    private final EventService eventService;
 
     @GetMapping
     public List<TodoItemDto> getItems() {
@@ -37,8 +37,8 @@ public class TodoItemController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createItem(@RequestBody TodoItemDto todoItemEntity) {
-        todoItemService.addItem(todoItemEntity);
+    public ResponseEntity<?> createItem(@RequestBody TodoItemDto todoItemDto) {
+        todoItemService.addItem(todoItemDto);
         return ResponseEntity.ok().build();
     }
 
@@ -55,5 +55,10 @@ public class TodoItemController {
     @GetMapping("/search/{searchString}")
     public List<TodoItemDto> search(@PathVariable String searchString) {
         return todoItemService.search(searchString);
+    }
+
+    @GetMapping("/count")
+    public int countTodoItems() {
+        return eventService.count();
     }
 }

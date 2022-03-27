@@ -3,13 +3,12 @@ package pl.lodz.p.todo.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.lodz.p.todo.domain.TodoItemDocument;
+import pl.lodz.p.todo.domain.Event;
 import pl.lodz.p.todo.domain.TodoItemEntity;
 import pl.lodz.p.todo.dto.TodoItemDto;
-import pl.lodz.p.todo.dto.mappers.TodoItemDocumentMapper;
 import pl.lodz.p.todo.dto.mappers.TodoItemEntityMapper;
-import pl.lodz.p.todo.repositories.TodoItemDocumentRepository;
-import pl.lodz.p.todo.repositories.analytics.TodoItemAnalyticsEntityRepository;
+import pl.lodz.p.todo.enums.EventStatus;
+import pl.lodz.p.todo.repositories.EventRepository;
 import pl.lodz.p.todo.repositories.domain.TodoItemEntityRepository;
 
 import java.util.List;
@@ -22,21 +21,16 @@ import java.util.stream.Collectors;
 public class TodoItemService {
 
     private final TodoItemEntityRepository todoItemEntityRepository;
-    private final TodoItemDocumentRepository todoItemDocumentRepository;
-    private final TodoItemAnalyticsEntityRepository todoItemAnalyticsEntityRepository;
+    private final EventRepository eventRepository;
 
-    @Transactional(transactionManager = "chainedTransactionManager")
     public void addItem(TodoItemDto todoItemDto) {
         String businessKey = UUID.randomUUID().toString();
-
-        TodoItemEntity todoItemEntity = TodoItemEntityMapper.mapFromDto(todoItemDto);
-        todoItemEntity.setBusinessKey(businessKey);
-        todoItemEntityRepository.saveAndFlush(todoItemEntity);
-        todoItemAnalyticsEntityRepository.save(todoItemEntity);
-
-        TodoItemDocument todoItemDocument = TodoItemDocumentMapper.mapFromDto(todoItemDto);
-        todoItemDocument.setBusinessKey(businessKey);
-        todoItemDocumentRepository.save(todoItemDocument);
+        Event event = new Event();
+        event.setBusinessKey(businessKey);
+        event.setEventType("CREATE");
+        event.setTodoItem(TodoItemEntityMapper.mapFromDto(todoItemDto));
+        event.setStatus(EventStatus.NEW);
+        eventRepository.save(event);
     }
 
     public TodoItemDto getItemById(Long id) {
@@ -52,23 +46,17 @@ public class TodoItemService {
     @Transactional(transactionManager = "chainedTransactionManager")
     public void deleteItemById(String businessKey) {
         todoItemEntityRepository.deleteByBusinessKey(businessKey);
-        todoItemDocumentRepository.deleteByBusinessKey(businessKey);
+        eventRepository.deleteByBusinessKey(businessKey);
     }
 
     @Transactional(transactionManager = "chainedTransactionManager")
     public void updateItem(TodoItemDto todoItemDto) {
         TodoItemEntity todoItemEntity = todoItemEntityRepository.findByBusinessKey(todoItemDto.getBusinessKey())
                 .orElseThrow(IllegalArgumentException::new);
-        TodoItemDocument todoItemDocument = todoItemDocumentRepository.findByBusinessKey(todoItemDto.getBusinessKey())
-                .orElseThrow(IllegalArgumentException::new);
 
         todoItemEntity.setTitle(todoItemDto.getTitle());
         todoItemEntity.setDescription(todoItemDto.getDescription());
         todoItemEntityRepository.saveAndFlush(todoItemEntity);
-
-        todoItemDocument.setTitle(todoItemDto.getTitle());
-        todoItemDocument.setDescription(todoItemDto.getDescription());
-        todoItemDocumentRepository.save(todoItemDocument);
     }
 
     public List<TodoItemDto> search(String searchString) {
