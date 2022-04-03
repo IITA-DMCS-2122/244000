@@ -1,7 +1,13 @@
 package pl.lodz.p.todo.services;
 
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,9 +27,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EventService {
 
+    private static final String COLLECTION_NAME = "event";
+    private static final String FIELD_NAME = "status";
+
     private final TodoItemAnalyticsEntityRepository todoItemAnalyticsEntityRepository;
     private final TodoItemEntityRepository todoItemEntityRepository;
     private final EventRepository eventRepository;
+    private final MongoTemplate mongoTemplate;
 
     @Scheduled(cron = "0 * * * * *")
     @Transactional(transactionManager = "chainedTransactionManager")
@@ -39,6 +49,18 @@ public class EventService {
     }
 
     public int count() {
-        return eventRepository.findAll().size();
+        TypedAggregation<EventAmount> aggregation = Aggregation.newAggregation(
+                EventAmount.class,
+                Aggregation.match(Criteria.where(FIELD_NAME).is("CREATED")),
+                Aggregation.unwind(FIELD_NAME),
+                Aggregation.group().count().as("count")
+        );
+        AggregationResults<EventAmount> result = mongoTemplate.aggregate(aggregation, COLLECTION_NAME, EventAmount.class);
+        return result.getMappedResults().get(0).getCount();
+    }
+
+    @Data
+    private static class EventAmount {
+        private int count;
     }
 }
