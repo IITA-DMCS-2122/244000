@@ -1,1 +1,1 @@
-# 244000![](Blank diagram.jpeg)
+# 244000
